@@ -1,0 +1,24 @@
+<!-- tarefas.ejs -->
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lista de Tarefas</title>
+    <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+    <h1>Lista de Tarefas</h1>
+    <ul>
+        <% tarefas.forEach(tarefa => { %>
+            <li class="<%= tarefa.Custo >= 1000 ? 'highlight' : '' %>">
+                <strong><%= tarefa.Nome_Tarefa %></strong> - R$<%= tarefa.Custo %> - <%= tarefa.Data_Limite %>
+                <button onclick="editarTarefa('<%= tarefa.ID_Tarefa %>')">Editar</button>
+                <button onclick="excluirTarefa('<%= tarefa.ID_Tarefa %>')">Excluir</button>
+            </li>
+        <% }) %>
+    </ul>
+    <button onclick="incluirTarefa()">Incluir Tarefa</button>
+    <script src="/js/scripts.js"></script>
+</body>
+</html>
