@@ -9,25 +9,54 @@
 </head>
 <body>
     <h1>Lista de Tarefas</h1>
+
+    <% if (typeof error !== 'undefined' && error) { %>
+        <script>alert("<%= error %>");</script>
+    <% } %>
+
     <ul id="listaTarefas">
         <% tarefas.forEach(tarefa => { %>
-            <li id="tarefa-<%= tarefa.ID_Tarefa %>" draggable="true" ondragstart="drag(event)" ondrop="drop(event)" ondragover="allowDrop(event)" class="<%= tarefa.Custo >= 1000 ? 'highlight' : '' %>">
+            <li id="tarefa-<%= tarefa.ID_Tarefa %>" draggable="true" ondragstart="drag(event)" class="<%= tarefa.Custo >= 1000 ? 'highlight' : '' %>">
                 <strong><%= tarefa.Nome_Tarefa %></strong> - R$<%= tarefa.Custo %> - <%= tarefa.Data_Limite %>
-                <button onclick="editarTarefa('<%= tarefa.ID_Tarefa %>')"><i class="fas fa-edit"></i>Editar</button>
-                <button onclick="excluirTarefa('<%= tarefa.ID_Tarefa %>')"><i class="fas fa-trash-alt"></i>Excluir</button>
+                <button onclick="editarTarefa('<%= tarefa.ID_Tarefa %>')"><i class="fas fa-edit"></i> Editar</button>
+                <button onclick="excluirTarefa('<%= tarefa.ID_Tarefa %>')"><i class="fas fa-trash-alt"></i> Excluir</button>
             </li>
         <% }) %>
     </ul>
-    <button onclick="document.getElementById('incluirForm').style.display='block'">Incluir Tarefa</button>
+    <button onclick="document.getElementById('incluirForm').style.display='block'"><i class="fas fa-plus"></i> Incluir Tarefa</button>
 
     <form id="incluirForm" action="/incluir" method="POST" style="display: none;">
         <input type="text" name="Nome_Tarefa" placeholder="Nome da Tarefa" required>
         <input type="number" step="0.01" name="Custo" placeholder="Custo (R$)" required>
         <input type="date" name="Data_Limite" required>
-        <button type="submit">Incluir</button>
+        <button type="submit"><i class="fas fa-upload"></i> Enviar</button>
     </form>
 
     <script>
+        document.getElementById('incluirForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            
+            const formData = new FormData(event.target);
+            const data = Object.fromEntries(formData.entries());
+
+            fetch('/incluir', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    alert(data.error);
+                } else {
+                    location.reload();
+                }
+            })
+            .catch(error => console.error('Erro:', error));
+        });
+
         function drag(ev) {
             ev.dataTransfer.setData("text", ev.target.id);
         }
@@ -44,7 +73,14 @@
             const listaTarefas = document.getElementById("listaTarefas");
 
             if (targetElement && listaTarefas.contains(targetElement)) {
-                listaTarefas.insertBefore(draggedElement, targetElement.nextSibling);
+                const rect = targetElement.getBoundingClientRect();
+                const offset = ev.clientY - rect.top;
+
+                if (offset > rect.height / 2) {
+                    listaTarefas.insertBefore(draggedElement, targetElement.nextSibling);
+                } else {
+                    listaTarefas.insertBefore(draggedElement, targetElement);
+                }
             }
 
             const ordem = Array.from(listaTarefas.children).map(li => li.id.replace("tarefa-", ""));
@@ -55,16 +91,9 @@
                 },
                 body: JSON.stringify({ ordem })
             })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error("Erro na atualização da ordem das tarefas");
-                }
-                // Reordenar elementos na tela
-                listaTarefas.innerHTML = '';
-                ordem.forEach(id => {
-                    const tarefaElement = document.getElementById(`tarefa-${id}`);
-                    listaTarefas.appendChild(tarefaElement);
-                });
+            .then(response => response.text())
+            .then(data => {
+                console.log(data);
             })
             .catch(error => console.error("Erro:", error));
         }
@@ -85,9 +114,13 @@
                     },
                     body: JSON.stringify({ Nome_Tarefa: nome, Custo: custo, Data_Limite: dataLimite })
                 })
-                .then(response => response.text())
+                .then(response => response.json())
                 .then(data => {
-                    location.reload();
+                    if (data.error) {
+                        alert(data.error);
+                    } else {
+                        location.reload();
+                    }
                 })
                 .catch(error => console.error('Erro:', error));
             }
