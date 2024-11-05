@@ -1,4 +1,3 @@
-<!-- tarefas.ejs -->
 <!DOCTYPE html>
 <html lang="pt">
 <head>
@@ -9,16 +8,100 @@
 </head>
 <body>
     <h1>Lista de Tarefas</h1>
-    <ul>
+    <ul id="listaTarefas">
         <% tarefas.forEach(tarefa => { %>
-            <li class="<%= tarefa.Custo >= 1000 ? 'highlight' : '' %>">
+            <li id="tarefa-<%= tarefa.ID_Tarefa %>" draggable="true" ondragstart="drag(event)" ondrop="drop(event)" ondragover="allowDrop(event)" class="<%= tarefa.Custo >= 1000 ? 'highlight' : '' %>">
                 <strong><%= tarefa.Nome_Tarefa %></strong> - R$<%= tarefa.Custo %> - <%= tarefa.Data_Limite %>
                 <button onclick="editarTarefa('<%= tarefa.ID_Tarefa %>')">Editar</button>
                 <button onclick="excluirTarefa('<%= tarefa.ID_Tarefa %>')">Excluir</button>
             </li>
         <% }) %>
     </ul>
-    <button onclick="incluirTarefa()">Incluir Tarefa</button>
-    <script src="/js/scripts.js"></script>
+    <button onclick="document.getElementById('incluirForm').style.display='block'">Incluir Tarefa</button>
+
+    <form id="incluirForm" action="/incluir" method="POST" style="display: none;">
+        <input type="text" name="Nome_Tarefa" placeholder="Nome da Tarefa" required>
+        <input type="number" step="0.01" name="Custo" placeholder="Custo (R$)" required>
+        <input type="date" name="Data_Limite" required>
+        <button type="submit">Incluir</button>
+    </form>
+
+    <script>
+        function drag(ev) {
+            ev.dataTransfer.setData("text", ev.target.id);
+        }
+
+        function allowDrop(ev) {
+            ev.preventDefault();
+        }
+
+        function drop(ev) {
+            ev.preventDefault();
+            const data = ev.dataTransfer.getData("text");
+            const draggedElement = document.getElementById(data);
+            const targetElement = ev.target.closest("li");
+            const listaTarefas = document.getElementById("listaTarefas");
+
+            if (targetElement && listaTarefas.contains(targetElement)) {
+                listaTarefas.insertBefore(draggedElement, targetElement.nextSibling);
+            }
+
+            const ordem = Array.from(listaTarefas.children).map(li => li.id.replace("tarefa-", ""));
+            fetch("/reordenar", {
+                method: "PATCH",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ ordem })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error("Erro na atualização da ordem das tarefas");
+                }
+                // Reordenar elementos na tela
+                listaTarefas.innerHTML = '';
+                ordem.forEach(id => {
+                    const tarefaElement = document.getElementById(`tarefa-${id}`);
+                    listaTarefas.appendChild(tarefaElement);
+                });
+            })
+            .catch(error => console.error("Erro:", error));
+        }
+
+        document.getElementById("listaTarefas").addEventListener("dragover", allowDrop);
+        document.getElementById("listaTarefas").addEventListener("drop", drop);
+
+        function editarTarefa(id) {
+            const nome = prompt('Novo nome da tarefa:');
+            const custo = prompt('Novo custo da tarefa:');
+            const dataLimite = prompt('Nova data limite (AAAA-MM-DD):');
+            
+            if (nome && custo && dataLimite) {
+                fetch(`/editar/${id}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ Nome_Tarefa: nome, Custo: custo, Data_Limite: dataLimite })
+                })
+                .then(response => response.text())
+                .then(data => {
+                    location.reload();
+                })
+                .catch(error => console.error('Erro:', error));
+            }
+        }
+
+        function excluirTarefa(id) {
+            if (confirm('Tem certeza de que deseja excluir esta tarefa?')) {
+                fetch(`/excluir/${id}`, { method: 'DELETE' })
+                    .then(response => response.text())
+                    .then(data => {
+                        location.reload();
+                    })
+                    .catch(error => console.error('Erro:', error));
+            }
+        }
+    </script>
 </body>
 </html>

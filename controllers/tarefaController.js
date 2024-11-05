@@ -9,10 +9,18 @@ exports.listarTarefas = (req, res) => {
 
 exports.incluirTarefa = (req, res) => {
     const { Nome_Tarefa, Custo, Data_Limite } = req.body;
-    const query = 'INSERT INTO Tarefas (Nome_Tarefa, Custo, Data_Limite, Ordem_Apresentacao) VALUES (?, ?, ?, (SELECT IFNULL(MAX(Ordem_Apresentacao), 0) + 1 FROM Tarefas))';
-    db.query(query, [Nome_Tarefa, Custo, Data_Limite], (err, results) => {
+
+    const getMaxOrderQuery = 'SELECT IFNULL(MAX(Ordem_Apresentacao), 0) + 1 AS NovaOrdem FROM Tarefas';
+    db.query(getMaxOrderQuery, (err, results) => {
         if (err) throw err;
-        res.redirect('/');
+
+        const NovaOrdem = results[0].NovaOrdem;
+        const insertQuery = 'INSERT INTO Tarefas (Nome_Tarefa, Custo, Data_Limite, Ordem_Apresentacao) VALUES (?, ?, ?, ?)';
+
+        db.query(insertQuery, [Nome_Tarefa, Custo, Data_Limite, NovaOrdem], (err, results) => {
+            if (err) throw err;
+            res.redirect('/');
+        });
     });
 };
 
@@ -35,6 +43,11 @@ exports.excluirTarefa = (req, res) => {
 };
 
 exports.reordenarTarefas = (req, res) => {
-    // Lógica para reordenar as tarefas
+    const { ordem } = req.body; // 'ordem' é um array de IDs de tarefas na nova ordem
+    ordem.forEach((id, index) => {
+        db.query('UPDATE Tarefas SET Ordem_Apresentacao = ? WHERE ID_Tarefa = ?', [index + 1, id], (err, results) => {
+            if (err) throw err;
+        });
+    });
     res.redirect('/');
 };
