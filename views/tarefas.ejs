@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Lista de Tarefas</title>
     <link rel="stylesheet" href="/css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
 <body>
     <h1>Lista de Tarefas</h1>
@@ -12,8 +13,8 @@
         <% tarefas.forEach(tarefa => { %>
             <li id="tarefa-<%= tarefa.ID_Tarefa %>" draggable="true" ondragstart="drag(event)" ondrop="drop(event)" ondragover="allowDrop(event)" class="<%= tarefa.Custo >= 1000 ? 'highlight' : '' %>">
                 <strong><%= tarefa.Nome_Tarefa %></strong> - R$<%= tarefa.Custo %> - <%= tarefa.Data_Limite %>
-                <button onclick="editarTarefa('<%= tarefa.ID_Tarefa %>')">Editar</button>
-                <button onclick="excluirTarefa('<%= tarefa.ID_Tarefa %>')">Excluir</button>
+                <button onclick="editarTarefa('<%= tarefa.ID_Tarefa %>')"><i class="fas fa-edit"></i>Editar</button>
+                <button onclick="excluirTarefa('<%= tarefa.ID_Tarefa %>')"><i class="fas fa-trash-alt"></i>Excluir</button>
             </li>
         <% }) %>
     </ul>
